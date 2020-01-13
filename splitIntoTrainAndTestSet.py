@@ -3,7 +3,7 @@ from pathlib import Path
 
 if __name__ == "__main__":
     split_train_factor = 0.8  # percentage
-    minimum_records = 5  # Minimum records of accents we allowed to train on
+    minimum_records = 9  # Minimum records of accents we allowed to train on
     # Path to data set
     path = r'C:\Users\Dekel\Downloads\לימודים\deep_learning\datasets\speech-accent-archive\recordings'
     train_path = r'C:\Users\Dekel\Downloads\לימודים\deep_learning\datasets\speech-accent-archive\recordings\train_set'
@@ -39,6 +39,7 @@ if __name__ == "__main__":
         if len(list) < minimum_records:
             all_data.remove(list)
 
+    print("Number of classes: ", len(all_data))
     for list in all_data:
         amount_to_training = int(len(list) * split_train_factor)
         amount_to_test = len(list) - amount_to_training  # The rest goes for test set
