@@ -50,10 +50,14 @@ if __name__ == "__main__":
             file_name_with_extension = tokens[-1]
             destination = train_path + '\\' + file_name_with_extension
             os.rename(source, destination)  # Move the file to train_set folder
-        # Move20% to test
+            if(i >= 7): #Maximum 8 records to train
+                break
+        # Move 20% to test
         for j in range(amount_to_test):
             source = list[amount_to_training + j]
             tokens = source.split('\\')  # by slash
             file_name_with_extension = tokens[-1]
             destination = test_path + '\\' + file_name_with_extension
             os.rename(source, destination)  # Move the file to test_set folder
+            if(j >= 1): #Maximum 2 records to test
+                break
