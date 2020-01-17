@@ -2,6 +2,9 @@ from pathlib import Path
 
 from pydub import AudioSegment
 
+'''In order to install ffmpeg, follow the 4 steps in:
+http://blog.gregzaal.com/how-to-install-ffmpeg-on-windows/
+'''
 if __name__ == "__main__":
     path = 'C:/Users/Dekel/Downloads/לימודים/deep_learning/datasets/speech-accent-archive/recordings'
     path_list = Path(path).glob('**/*.mp3')
