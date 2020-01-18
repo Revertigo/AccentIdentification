@@ -6,7 +6,7 @@ import scipy.io.wavfile as wav
 from pathlib import Path
 import librosa
 
-labels = 44  # number of classes
+labels = 15  # number of classes
 classes_ind = -1
 last_file_name = ''
 
@@ -27,7 +27,7 @@ def resolve_prediction(path_to_wav):
     last_file_name = file_name
 
 
-def extract_features(wav_file, path_to_wav):
+def extract_features_avg(wav_file, path_to_wav):
     """
     The function extracts the features from the wav_file uses as recording file.
     @:param wav_file: Input file to extract features from
@@ -49,6 +49,17 @@ def extract_features(wav_file, path_to_wav):
             data = np.append(data, 0)  # Rest of the classes will receive prediction 0
 
     return data
+
+
+def make_avg_mfcc(data_path, path_to_csv):
+    path_list = Path(data_path).glob('**/*.wav')
+    with open(path_to_csv, 'w') as f:
+        for path in path_list:
+            path_to_wav = str(path)  # convert object path to string
+            arr_feat = extract_features_avg(path_to_wav, path_to_wav)  # Features array
+            for i in range(len(arr_feat) - 1):
+                f.write("%s," % str(arr_feat[i]))
+            f.write("%s\n" % str(arr_feat[len(arr_feat) - 1]))
 
 
 # read in signal, change sample rate to outrate (samples/sec), use write_wav=True to save wav file to disk
@@ -79,36 +90,13 @@ def make_normed_mfcc(filename, outrate=8000):
     return normed_mfcc_feat
 
 
-# for folder containing wav files, output numpy array of normed mfcc
-def make_class_array(folder):
-    path_to_folder = "resources/train_set/"
-    lst = []
-    i = 0
-    for filename in os.listdir(folder):
-        result = make_normed_mfcc(folder + "\\" + filename)
-        lst.append(result)
-        write_mat_to_csv(i, result, path_to_folder)
-        resolve_prediction(folder + "\\" + filename)
-        data = np.zeros(shape=(1,0))
-        for j in range(labels):
-            if j == classes_ind:
-                data = np.append(data, 1)  # This is the class we predict
-            else:
-                data = np.append(data, 0)  # Rest of the classes will receive prediction 0
-        write_prediction_to_csv(i, data, path_to_folder)
-        i += 1
-        print("Done ", i)
-    class_array = np.array(lst)
-    class_array = np.reshape(class_array, (class_array.shape[0], class_array.shape[2], class_array.shape[1]))
-    print(class_array.shape)
-    return class_array
-
 def write_mat_to_csv(ind, result, path_to_folder):
     with open(path_to_folder + str(ind) + ".csv", 'w') as f:  # Write result item into file
-        for j in range(len(result) - 1):
-            for k in range(len(result[j])):
-                f.write("%s," % str(result[j][k]))
-            f.write("%s\n" % str(result[j][len(result) - 1]))
+        for i in range(len(result)):
+            for j in range(len(result[i]) - 1):
+                f.write("%s," % str(result[i][j]))
+            f.write("%s\n" % str(result[i][len(result[i]) - 1]))
+
 
 def write_prediction_to_csv(ind, data, path_to_folder):
     with open(path_to_folder + str(ind) + "_pred.csv", 'w') as f:  # Write prediction into file
@@ -116,27 +104,52 @@ def write_prediction_to_csv(ind, data, path_to_folder):
             f.write("%s," % str(data[i]))
 
 
+def write_data_to_csv(i, result, folder, target_folder, filename):
+    write_mat_to_csv(i, result, target_folder)
+    resolve_prediction(folder + "\\" + filename)
+    data = np.zeros(shape=(1, 0))
+    for j in range(labels):
+        if j == classes_ind:
+            data = np.append(data, 1)  # This is the class we predict
+        else:
+            data = np.append(data, 0)  # Rest of the classes will receive prediction 0
+    write_prediction_to_csv(i, data, target_folder)
+
+
+# for folder containing wav files, output numpy array of normed mfcc
+def make_class_array(folder, target_folder):
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder)
+    lst = []
+    i = 0
+    for filename in os.listdir(folder):
+        result = make_normed_mfcc(folder + "\\" + filename)
+        lst.append(result)
+        i += 1
+        print("Done ", i)
+    class_array = np.array(lst)
+    class_array = np.reshape(class_array, (class_array.shape[0], class_array.shape[2], class_array.shape[1]))
+    i = 0
+    # Write output normed mfcc to csv
+    for filename in os.listdir(folder):
+        write_data_to_csv(i, class_array[i], folder, target_folder, filename)
+        i += 1
+    return class_array
+
+
 if __name__ == "__main__":
-    chooser = False  # False for train, True for test
     # path to the training set
     train_set_path = r'C:\Users\Dekel\Downloads\לימודים\deep_learning\datasets\speech-accent-archive\recordings\train_set'
     # path to the test set
     test_set_path = r'C:\Users\Dekel\Downloads\לימודים\deep_learning\datasets\speech-accent-archive\recordings\test_set'
-    lefties_path = r'C:\Users\Dekel\Downloads\לימודים\deep_learning\datasets\speech-accent-archive\recordings\lefties'
 
+    # chooser = True  # False for train, True for test
     # data_path = train_set_path
     # path_to_csv = "resources/train_set_features.csv"
     # if chooser:
     #     data_path = test_set_path
     #     path_to_csv = "resources/test_set_features.csv"
-    #
-    # path_list = Path(data_path).glob('**/*.wav')
-    # with open(path_to_csv, 'w') as f:
-    #     for path in path_list:
-    #         path_to_wav = str(path)  # convert object path to string
-    #         arr_feat = extract_features(path_to_wav, path_to_wav)  # Features array
-    #         for i in range(len(arr_feat) - 1):
-    #             f.write("%s," % str(arr_feat[i]))
-    #         f.write("%s\n" % str(arr_feat[len(arr_feat) - 1]))
+    # make_avg_mfcc(data_path, path_to_csv)
 
-    make_class_array(train_set_path)
+    target_folder = "resources/normed_features/22_train_4_test_15_class_train/"
+    make_class_array(train_set_path, target_folder)
