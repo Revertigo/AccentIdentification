@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 
 if __name__ == "__main__":
-    split_train_factor = 0.8  # percentage
-    minimum_records = 9  # Minimum records of accents we allowed to train on
+    split_train_factor = 0.85  # percentage
+    minimum_records = 26  # Minimum records of accents we allowed to train on
     # Path to data set
     path = r'C:\Users\Dekel\Downloads\לימודים\deep_learning\datasets\speech-accent-archive\recordings'
     train_path = r'C:\Users\Dekel\Downloads\לימודים\deep_learning\datasets\speech-accent-archive\recordings\train_set'
@@ -50,7 +50,7 @@ if __name__ == "__main__":
             file_name_with_extension = tokens[-1]
             destination = train_path + '\\' + file_name_with_extension
             os.rename(source, destination)  # Move the file to train_set folder
-            if(i >= 7): #Maximum 8 records to train
+            if(i >= 21): #Maximum 22 records to train
                 break
         # Move 20% to test
         for j in range(amount_to_test):
@@ -59,5 +59,5 @@ if __name__ == "__main__":
             file_name_with_extension = tokens[-1]
             destination = test_path + '\\' + file_name_with_extension
             os.rename(source, destination)  # Move the file to test_set folder
-            if(j >= 1): #Maximum 2 records to test
+            if(j >= 3): #Maximum 4 records to test
                 break
