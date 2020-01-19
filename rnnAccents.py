@@ -3,11 +3,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import math
 import os
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from sklearn.metrics import classification_report
 from sklearn.preprocessing import MinMaxScaler
 from extractFeatures import labels
 from tensorflow_core.python.keras.api._v2.keras import layers
@@ -15,11 +17,31 @@ from tensorflow_core.python.keras.layers.core import Dropout
 from tensorflow_core.python.keras.losses import mean_squared_error
 
 np.random.seed(1337)  # for reproducibility
-# Each MNIST image batch is a tensor of shape (batch_size, 28, 28).
-# Each input sequence will be of size (28, 28) (height is treated like time).
-input_dim = 28
-
 units = 64
+
+mpl.rcParams['figure.figsize'] = (12, 10)
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+def plot_metrics(history):
+    metrics = ['loss', 'accuracy']
+    for n, metric in enumerate(metrics):
+        name = metric.replace("_", " ").capitalize()
+        plt.subplot(2, 2, n + 1)
+        plt.plot(history.epoch, history.history[metric], color=colors[0], label='Train')
+        # plt.plot(history.epoch, history.history['val_' + metric],
+        #          color=colors[0], linestyle="--", label='Val')
+        plt.xlabel('Epoch')
+        plt.ylabel(name)
+        if metric == 'loss':
+            plt.ylim([0, plt.ylim()[1]])
+        # elif metric == 'accuracy':
+        #     plt.ylim([0.8, 1])
+        else:
+            plt.ylim([0, 1])
+
+        plt.legend()
+        plt.show()
+
 
 def build_prediction(path, ind):
     temp_y = pd.read_csv(path + "/" + str(ind) + "_pred.csv", header=None)
@@ -44,13 +66,13 @@ def build_features_mat(path):
 
 if __name__ == "__main__":
     features = 13  # Number of coefficient
-    batch_size = 25
+    batch_size = 30
     model = tf.keras.Sequential()
 
     # Reading train set
-    # train_data = pd.read_csv(r'resources/train_set_features.csv', header=None)
-    #
-    # # Retrieve features into matrix, then converting that matrix to array
+    train_data = pd.read_csv(r'resources/train_set_features.csv', header=None)
+
+    # Retrieve features into matrix, then converting that matrix to array
     # x_train = np.array(train_data.iloc[:, 0:features].values)
     # scaler = MinMaxScaler(feature_range=(0, 1))
     # dataset = scaler.fit_transform(x_train)
@@ -58,10 +80,10 @@ if __name__ == "__main__":
     # 'The LSTM network expects the input data (X) to be provided with a specific ' \
     # 'array structure in the form of: [samples, time steps, features].'
     # x_train = np.reshape(x_train, (x_train.shape[0], 1, x_train.shape[1]))
+    # print("Dimesnsion 1: ", x_train.shape[1])
+    # print("Dimesnsion 2: ", x_train.shape[2])
     # # Train Data labels, as array of size labels
     # y_train = np.array(train_data.iloc[:, features:].values)
-    # print(x_train.shape)
-    # print(y_train.shape)
     # # Reading test set
     # test_data = pd.read_csv('resources/test_set_features.csv', header=None)
     # # Retrieve features into matrix, then converting that matrix to array
@@ -71,20 +93,20 @@ if __name__ == "__main__":
     # # Test Data labels, as array of size labels
     # y_test = np.array(test_data.iloc[:, features:].values)
 
-    train_path = r'resources/normed_features/25_train_4_test_15_class_train'
+    train_path = r'resources/normed_features/86_train_13_test_3_class_sliced_train'
     x_train, y_train = build_features_mat(train_path)
     print("Done reading train set...")
-    test_path = r'resources/normed_features/25_train_4_test_15_class_test'
+    test_path = r'resources/normed_features/86_train_13_test_3_class_sliced_test'
     x_test, y_test = build_features_mat(test_path)
     x_test_reshaped = x_test[:, 0, :]  # squeeze the middle dimension
     scaler = MinMaxScaler(feature_range=(0, 1))
     dataset = scaler.fit_transform(x_test_reshaped)
     print("Done reading test set...")
 
-    model.add(tf.keras.layers.LSTM(64, return_sequences=True, stateful=False,
+    model.add(tf.keras.layers.LSTM(units, return_sequences=True, stateful=False,
                                    batch_input_shape=(batch_size, x_train.shape[1], x_train.shape[2])))
-    model.add(tf.keras.layers.LSTM(64, return_sequences=True, stateful=False))
-    model.add(tf.keras.layers.LSTM(64, stateful=False))
+    model.add(tf.keras.layers.LSTM(units, return_sequences=True, stateful=False))
+    model.add(tf.keras.layers.LSTM(units, stateful=False))
 
     # add Regularization to avoid overfitting
     model.add(Dropout(0.25))
@@ -97,51 +119,39 @@ if __name__ == "__main__":
                   optimizer='adam',
                   metrics=['accuracy'])
 
-    model.fit(x_train, y_train,
-              validation_data=(x_test, y_test),
-              batch_size=batch_size,
-              verbose = 2,
-              epochs=50)
+    history = model.fit(x_train, y_train,
+                        validation_split = 0.15, #Add validation set of 0.1
+                        batch_size=batch_size,
+                        verbose = 2,
+                        shuffle = True,
+                        epochs=50)
 
     # make predictions
-    trainPredict = model.predict(x_train)
-    testPredict = model.predict(x_test)
+    y_pred = model.predict_classes(x_test, batch_size=batch_size)
+    print(y_pred)
     success = 0
 
-    # Check real accuracy
-    for i in range(len(testPredict)):
-        prediction = testPredict[i]  # returns array of predictions
-        max = 0
-        test_pred_label = 0
-        for j in range(len(prediction)):
-            if (prediction[j] > max):
-                max = prediction[j]
-                test_pred_label = j
-
-        print("prediction label: ", test_pred_label)
-        test_label = 0
+    for i in range(len(y_pred)):
+        real_label = 0
         for j in range(len(y_test[i])):
             if y_test[i][j] == 1:
-                test_label = j
+                real_label = j
                 break
-        print("Real label: ", test_label)
-        if test_label == test_pred_label:
+        print("prediction label: ", y_pred[i])
+        print("Real label: ", real_label)
+        if real_label == y_pred[i]:
             success += 1
 
+    y_real = []
+    for i in range(len(y_pred)):
+        real_label = 0
+        for j in range(len(y_test[i])):
+            if y_test[i][j] == 1:
+                y_real.append(j)
+                break
+    print(classification_report(y_real, y_pred))
 
     print("\nHit count: ", success, "(out of {})".format(len(x_test)))
     print("Actual accuracy based on test set: " + str((success / len(x_test)) * 100.0) + " %")
 
-    testScore = 0
-    for i in range(y_test.shape[0]):
-        testScore += math.sqrt(mean_squared_error(y_test[i], testPredict[i]))
-    print('Test Score: %.3f RMSE(Root Mean Squared Error)' % (testScore / y_test.shape[0]))
-    # shift test predictions for plotting
-    look_back = 1
-    testPredictPlot = np.empty_like(y_test)
-    testPredictPlot[:, :] = np.nan
-    testPredictPlot[len(trainPredict) + (look_back * 2) + 1:len(x_train) - 1, :] = testPredict[0]
-    # plot baseline and predictions
-    plt.plot(scaler.inverse_transform(dataset))
-    plt.plot(testPredictPlot)
-    plt.show()
+    plot_metrics(history)
