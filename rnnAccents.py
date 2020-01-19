@@ -120,10 +120,9 @@ if __name__ == "__main__":
                   metrics=['accuracy'])
 
     history = model.fit(x_train, y_train,
-                        validation_split = 0.15, #Add validation set of 0.1
+                        validation_split = 0.1, #Add validation set of 0.1
                         batch_size=batch_size,
                         verbose = 2,
-                        shuffle = True,
                         epochs=50)
 
     # make predictions

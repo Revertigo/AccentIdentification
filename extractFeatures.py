@@ -1,4 +1,6 @@
+import contextlib
 import os
+import wave
 
 import numpy as np
 from python_speech_features import mfcc
@@ -6,7 +8,8 @@ import scipy.io.wavfile as wav
 from pathlib import Path
 import librosa
 
-labels = 15  # number of classes
+avg_1_sec = 44576
+labels = 3  # number of classes
 classes_ind = -1
 last_file_name = ''
 
@@ -62,9 +65,21 @@ def make_avg_mfcc(data_path, path_to_csv):
             f.write("%s\n" % str(arr_feat[len(arr_feat) - 1]))
 
 
+# read in wav file, get out signal (np array) and sampling rate (int)
+def read_in_audio(filename):
+    (rate, sig) = wav.read(filename)
+    return sig, rate
+
+#Cut two seconds from the start, 1 second from the end
+def cut_beg_end(filename):
+    sig, rate = read_in_audio(filename)
+    end = len(sig) - avg_1_sec
+    return sig[avg_1_sec * 2:end]
+
 # read in signal, change sample rate to outrate (samples/sec), use write_wav=True to save wav file to disk
 def downsample(filename, outrate=8000, write_wav=False):
     (rate, sig) = wav.read(filename)
+    sig = cut_beg_end(filename)  # Slice seconds 1 to 2 from the beginning, last second from the end
     sig = [float(i) for i in sig]
     sig = np.asarray(sig)
     down_sig = librosa.core.resample(sig, float(rate), outrate, scale=True)
@@ -136,6 +151,26 @@ def make_class_array(folder, target_folder):
         i += 1
     return class_array
 
+def get_record_duration(filename):
+    with contextlib.closing(wave.open(filename, 'r')) as f:
+        frames = f.getnframes()
+        rate = f.getframerate()
+        duration = frames / (rate)
+        return int(duration)
+
+def get_avg_1_second(folder):
+    sum = 0
+    counter = 0
+    for filename in os.listdir(folder):
+        len_sig = len(read_in_audio(folder + "\\" + filename)[0])
+        seconds = get_record_duration(folder + "\\" + filename)
+        sum += len_sig/seconds
+        counter += 1
+
+    print("Avg 1 second is: ", sum/counter)
+
+
+
 
 if __name__ == "__main__":
     # path to the training set
@@ -151,5 +186,5 @@ if __name__ == "__main__":
     #     path_to_csv = "resources/test_set_features.csv"
     # make_avg_mfcc(data_path, path_to_csv)
 
-    target_folder = "resources/normed_features/22_train_4_test_15_class_train/"
-    make_class_array(train_set_path, target_folder)
+    target_folder = "resources/normed_features/86_train_13_test_3_class_sliced_test/"
+    make_class_array(test_set_path, target_folder)
