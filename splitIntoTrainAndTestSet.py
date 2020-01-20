@@ -3,7 +3,9 @@ from pathlib import Path
 
 if __name__ == "__main__":
     split_train_factor = 0.85  # percentage
-    #minimum_records = 60  # Minimum records of accents we allowed to train on - 5 classes
+    '''
+    I used this variable to select how many classes(accents) to work on.
+    '''
     minimum_records = 75  # Minimum records of accents we allowed to train on - 3 classes
     # Path to data set
     path = r'C:\Users\Dekel\Downloads\לימודים\deep_learning\datasets\speech-accent-archive\recordings'
@@ -35,7 +37,7 @@ if __name__ == "__main__":
         temp_accents_list.append(path_str)
         last_file = file_name
 
-    # first we want to remove all accents with less then 5 recording
+    # first we want to remove all accents with less then minimum_records recording
     for list in all_data[:]:
         if len(list) < minimum_records:
             all_data.remove(list)

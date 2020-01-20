@@ -53,7 +53,7 @@ def extract_features_avg(wav_file, path_to_wav):
 
     return data
 
-
+#The function creates a csv contains avg mfcc data for all .wav at data_path
 def make_avg_mfcc(data_path, path_to_csv):
     path_list = Path(data_path).glob('**/*.wav')
     with open(path_to_csv, 'w') as f:
@@ -70,11 +70,13 @@ def read_in_audio(filename):
     (rate, sig) = wav.read(filename)
     return sig, rate
 
-#Cut two seconds from the start, 1 second from the end
+
+# Cut two seconds from the start, 1 second from the end
 def cut_beg_end(filename):
     sig, rate = read_in_audio(filename)
     end = len(sig) - avg_1_sec
     return sig[avg_1_sec * 2:end]
+
 
 # read in signal, change sample rate to outrate (samples/sec), use write_wav=True to save wav file to disk
 def downsample(filename, outrate=8000, write_wav=False):
@@ -151,6 +153,7 @@ def make_class_array(folder, target_folder):
         i += 1
     return class_array
 
+
 def get_record_duration(filename):
     with contextlib.closing(wave.open(filename, 'r')) as f:
         frames = f.getnframes()
@@ -158,18 +161,17 @@ def get_record_duration(filename):
         duration = frames / (rate)
         return int(duration)
 
+
 def get_avg_1_second(folder):
     sum = 0
     counter = 0
     for filename in os.listdir(folder):
         len_sig = len(read_in_audio(folder + "\\" + filename)[0])
         seconds = get_record_duration(folder + "\\" + filename)
-        sum += len_sig/seconds
+        sum += len_sig / seconds
         counter += 1
 
-    print("Avg 1 second is: ", sum/counter)
-
-
+    print("Avg 1 second is: ", sum / counter)
 
 
 if __name__ == "__main__":
