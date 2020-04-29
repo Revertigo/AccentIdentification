@@ -64,10 +64,10 @@ if __name__ == "__main__":
     features = 13  # Number of coefficient
     model = tf.keras.Sequential()
 
-    # Reading train set
+    # Reading train set - Run with mfcc features
     # train_data = pd.read_csv(r'resources/train_set_features.csv', header=None)
-
-    # Retrieve features into matrix, then converting that matrix to array
+    #
+    # #Retrieve features into matrix, then converting that matrix to array
     # x_train = np.array(train_data.iloc[:, 0:features].values)
     # # reshape x_train to fit into lstm network input
     # 'The LSTM network expects the input data (X) to be provided with a specific ' \
@@ -84,10 +84,11 @@ if __name__ == "__main__":
     # # Test Data labels, as array of size labels
     # y_test = np.array(test_data.iloc[:, features:].values)
 
-    train_path = r'resources/normed_features/86_train_13_test_3_class_sliced_train'
+    # Run with normed features
+    train_path = r'resources/normed_features/86_train_13_test_3_class_train'
     x_train, y_train = build_features_mat(train_path)
     print("Done reading train set...")
-    test_path = r'resources/normed_features/86_train_13_test_3_class_sliced_test'
+    test_path = r'resources/normed_features/86_train_13_test_3_class_test'
     x_test, y_test = build_features_mat(test_path)
     print("Done reading test set...")
 
@@ -101,6 +102,7 @@ if __name__ == "__main__":
     # Add a Dense layer with 44 units and softmax activation.
     model.add(layers.Dense(labels, activation='softmax'))
 
+    model.summary()
     model.compile(loss='categorical_crossentropy',
                   optimizer='adam',
                   metrics=['accuracy'])
